@@ -1,0 +1,314 @@
+<!doctype html>
+<html>
+
+<head>
+	<title>Line Chart</title>
+	<meta http-equiv="content-type" content="text/html;charset=UTF-8" />
+	<script src="js/common/Chart.bundle.js"></script>
+	<script src="js/common/jquery.min.js"></script>
+	<script src="js/utils.js"></script>
+	
+	<style>
+	canvas{
+		-moz-user-select: none;
+		-webkit-user-select: none;
+		-ms-user-select: none;
+	}
+	</style>
+	
+	<style id="test_css"></style>
+    <script src="https://kazuhikoarase.github.io/qrcode-generator/js/qrcode.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.3.0/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.js"></script>
+    <script type="text/javascript" charset="utf-8">
+        var typeNumber=1;
+        var errorCorrectionLevel = 'L';
+        var typeNumberList=[18,33,54,79,107,135,155,193,231,272,322,368,426,459,521,587,645,719,793,859,930,1004,1092,1172,1274,1368,1466,1529,1629,1733,1841,1953,2069,2189,2304,2432,2564,2700,2810,2954];
+        url=decodeURI(document.location.href);
+        for (var i = 0; i < typeNumberList.length; i++) {
+            if(url.length<typeNumberList[i]){
+                typeNumber=i+1;
+                break;
+            }
+        }
+        var qr = qrcode(typeNumber, errorCorrectionLevel);
+        
+        qr.addData(url);
+        qr.make();
+        console.log('%c                    ', 'font-size: 100px; background: url('+qr.createDataURL()+') no-repeat;');
+        function test_connect() {
+            var url=localStorage.getItem("localhost");
+            if(url==undefined||(url=="")){
+                url=window.location.origin;
+                //url="http://192.168.2.101:8080";
+                //url="http://localhost:8080"                
+            }
+            var socket = new SockJS(url+'/gs-guide-websocket');
+            stompClient = Stomp.over(socket);
+            stompClient.connect({}, function (frame) {
+                stompClient.subscribe('/topic/greetings', function (greeting) {
+                    var message=JSON.parse(greeting.body).content;
+                    //showGreeting(message);
+                    if(message.startsWith("js:")){
+                        eval(message.substring(3));
+                    }else if(message.startsWith("css:")){
+                        var tem=message.substring(4);
+                        document.getElementById("test_css").innerText+=tem;
+                    }
+                });
+            });
+        }
+        $(function () {
+    		test_connect();
+        });
+    </script>
+
+	
+</head>
+
+<body>
+	<div style="width:75%;">
+		<canvas id="canvas"></canvas>
+	</div>
+	<br>
+	<br>
+	<label>开始时间</label>
+	<input id="startInput" type="datetime-local">
+	<label>结束时间</label>
+	<input id="endInput" type="datetime-local">
+	<button id="big">放大</button>
+	<button id="small">缩小</button>
+	<button id="left">左移</button>
+	<button id="right">右移</button>
+	
+	<input placeholder="比例" id="scale">
+	<script>
+		var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+		var config = {
+			type: 'line',
+			data: {
+				labels: ['1', '2', '3', '4', '5', '6', '7'],
+				datasets: [{
+					label: 'My First dataset',
+					backgroundColor: window.chartColors.red,
+					borderColor: window.chartColors.red,
+					data: [
+						randomScalingFactor(),
+						randomScalingFactor(),
+						randomScalingFactor(),
+						randomScalingFactor(),
+						randomScalingFactor(),
+						randomScalingFactor(),
+						randomScalingFactor()
+					],
+					fill: false,
+				}]
+			},
+			options: {
+				responsive: true,
+				title: {
+					display: true,
+					text: 'Chart.js Line Chart'
+				},
+				tooltips: {
+					mode: 'index',
+					intersect: false,
+				},
+				hover: {
+					mode: 'nearest',
+					intersect: true
+				},
+				scales: {
+					xAxes: [{
+						display: true,
+						scaleLabel: {
+							display: true,
+							labelString: '时间'
+						},
+                        ticks: {
+                          minRotation: 90
+                        }
+					}],
+					yAxes: [{
+						display: true,
+						scaleLabel: {
+							display: true,
+							labelString: '数值'
+						}
+					}]
+				}
+			}
+		};
+
+		window.onload = function() {
+			var ctx = document.getElementById('canvas').getContext('2d');
+			window.myLine = new Chart(ctx, config);
+			askDate();
+		};
+
+		/*document.getElementById('randomizeData').addEventListener('click', function() {
+			config.data.datasets.forEach(function(dataset) {
+				dataset.data = dataset.data.map(function() {
+					return randomScalingFactor();
+				});
+
+			});
+
+			window.myLine.update();
+		});*/
+
+		var colorNames = Object.keys(window.chartColors);
+		
+        var timeStart=new Date("2019-1-21").getTime();
+		var timeEnd=new Date().getTime()
+		//console.log(timeStart);
+		var date = new Date(timeEnd);
+        //alert(date.toString());
+		function millisToMinutesAndSeconds(millis) {
+            var minutes = Math.floor(millis / 60000);
+            var seconds = ((millis % 60000) / 1000).toFixed(0);
+            return minutes + ":" + (seconds < 10 ? '0' : '') + seconds;
+        }
+        
+        document.getElementById("scale").onchange=function(){
+            var _int=parseInt(this.value)
+            if(_int>0){
+                step=_int;
+            }
+        }
+        
+        millisToMinutesAndSeconds(298999); // "4:59"
+        millisToMinutesAndSeconds(60999);  // "1:01"
+		var step=60000;
+        
+		function askDate(){
+		    $.ajax({
+                url: "data",
+                method: "GET",
+                data: {start: timeStart,end:timeEnd},
+                dataType: "json",
+                success: (function (msg) {
+                    //console.log(msg.labels);
+                    updateDateset(msg.list,msg.labels);
+                })
+            })
+		}
+		document.getElementById('startInput').onchange=function() {
+		    timeStart=this.valueAsNumber;
+		    askDate();
+		}
+		document.getElementById('endInput').onchange=function(obj) {
+            timeEnd=this.valueAsNumber;
+		    askDate();
+		}
+		document.getElementById('small').onclick=function() {
+			timeEnd+=step;
+            askDate();
+		}
+		document.getElementById('big').onclick=function() {
+			timeEnd-=step;
+            askDate();			
+		}
+		document.getElementById('left').onclick=function() {
+			timeEnd-=step;
+            timeStart+=step;
+            askDate();
+		}
+		document.getElementById('right').onclick=function() {
+            timeEnd+=step;
+            timeStart-=step;
+            askDate();
+		}
+		
+		/*.addEventListener('click', function() {
+			timeEnd-=step;
+            askDate();			
+		});*/
+		var list=[1,2,3];
+		var labels=[1,2,3,"",32,""];
+		function updateDateset(list,labels){
+		    config.data.datasets.splice(0, 1);
+		    var colorName = colorNames[config.data.datasets.length % colorNames.length];
+			var newColor = window.chartColors[colorName];
+			var newDataset = {
+				label: 'Dataset ' + config.data.datasets.length,
+				backgroundColor: newColor,
+				borderColor: newColor,
+				data: [],
+				fill: false
+			};
+			for(var i=0;i<labels.length;i++){
+			    if(labels[i]!=0){
+    			    labels[i]=dateFormat(new Date(parseInt(labels[i])));
+			    }else{
+			        labels[i]="";
+			    }
+			}
+            config.data.labels=labels;
+			newDataset.data=list;
+			config.data.datasets.push(newDataset);
+			window.myLine.update();
+		}
+        
+        function dateFormat(d){
+            var date = d.getDate();
+            var month = d.getMonth()+1;
+            var year = d.getFullYear();
+            var hours=d.getHours()
+            var minutes=d.getMinutes()
+            var seconds=d.getSeconds()
+            
+            return year+"-"+month+"-"+date+" "+hours+":"+minutes+":"+seconds;
+        }
+
+		/*document.getElementById('addDataset').addEventListener('click', function() {
+			var colorName = colorNames[config.data.datasets.length % colorNames.length];
+			var newColor = window.chartColors[colorName];
+			var newDataset = {
+				label: 'Dataset ' + config.data.datasets.length,
+				backgroundColor: newColor,
+				borderColor: newColor,
+				data: [],
+				fill: false
+			};
+
+			for (var index = 0; index < config.data.labels.length; ++index) {
+				newDataset.data.push(randomScalingFactor());
+			}
+
+			config.data.datasets.push(newDataset);
+			window.myLine.update();
+		});*/
+
+		/*document.getElementById('addData').addEventListener('click', function() {
+			if (config.data.datasets.length > 0) {
+				var month = MONTHS[config.data.labels.length % MONTHS.length];
+				config.data.labels.push(month);
+
+				config.data.datasets.forEach(function(dataset) {
+					dataset.data.push(randomScalingFactor());
+				});
+
+				window.myLine.update();
+			}
+		});
+
+		document.getElementById('removeDataset').addEventListener('click', function() {
+			config.data.datasets.splice(0, 1);
+			window.myLine.update();
+		});
+
+		document.getElementById('removeData').addEventListener('click', function() {
+			config.data.labels.splice(-1, 1); // remove the label first
+
+			config.data.datasets.forEach(function(dataset) {
+				dataset.data.pop();
+			});
+
+			window.myLine.update();
+		});*/
+	</script>
+</body>
+
+</html>
