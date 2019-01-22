@@ -235,7 +235,7 @@
         <resource>
             <directory>src/main/java/info/mapper</directory>
             <includes>
-                <include>DataMapper.xml</include>
+                <include>*.xml</include>
             </includes>
             <!-- relative to target/classes
                  i.e. ${project.build.outputDirectory} -->
