@@ -43,7 +43,8 @@
     <tx:annotation-driven />
     
     <bean name="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
-        <property name="url" value="jdbc:mysql://127.0.0.1:3306/事务管理"></property>
+        <!--ref https://stackoverflow.com/questions/11133759/0000-00-00-000000-can-not-be-represented-as-java-sql-timestamp-error-->
+        <property name="url" value="jdbc:mysql://127.0.0.1:3306/事务管理?zeroDateTimeBehavior=convertToNull"></property>
         <property name="driverClassName" value="com.mysql.jdbc.Driver"></property>
         <property name="username" value="root"></property>
         <property name="password" value="root"></property>
